@@ -30,7 +30,7 @@ exclude_patterns = []
 
 html_theme = "pydata_sphinx_theme"
 
-blog_baseurl = ""
+blog_baseurl = "https://coderxkk.github.io/blog/"
 blog_path = "posts"
 blog_post_pattern = "posts/*.rst"
 
@@ -57,3 +57,16 @@ html_theme_options = {
         }
     ]
 }
+
+# 在 conf.py 文件末尾添加
+def setup(app):
+    # 在构建完成后自动创建 .nojekyll 文件
+    app.connect('build-finished', create_nojekyll)
+
+def create_nojekyll(app, exception):
+    if exception is None:
+        import os
+        nojekyll_path = os.path.join(app.outdir, '.nojekyll')
+        with open(nojekyll_path, 'w') as f:
+            pass  # 创建空文件
+        print(f"Created {nojekyll_path}")
