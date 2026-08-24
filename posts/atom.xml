@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
   <id>https://coderxkk.github.io/blog/</id>
   <title>Blog</title>
-  <updated>2026-08-24T12:21:12.023755+00:00</updated>
+  <updated>2026-08-24T12:29:20.779458+00:00</updated>
   <link href="https://coderxkk.github.io/blog/"/>
   <link href="https://coderxkk.github.io/blog/posts/atom.xml" rel="self"/>
   <generator uri="https://ablog.readthedocs.io/" version="0.11.13">ABlog</generator>
