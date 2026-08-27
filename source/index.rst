@@ -26,5 +26,7 @@ documentation for details.
    :caption: Contents:
 
    posts/test
+   kmd/01_start_to_amdgpu
+   umd/01_start_to_rocm
 
    

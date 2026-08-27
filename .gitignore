@@ -1,1 +1,4 @@
-./build/
+build/
+convert_rst.py
+docs_content.json
+read_docs.py

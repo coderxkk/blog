@@ -50,6 +50,7 @@ suppress_warnings = [
 ]
 
 html_theme_options = {
+    "navbar_center": [],
     "external_links": [
         {
             "name": "github主页",
