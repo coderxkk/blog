@@ -22,7 +22,7 @@ documentation for details.
 - `我的Github主页 <https://github.com/coderxkk>`_
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    posts/test
