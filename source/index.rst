@@ -27,6 +27,8 @@ documentation for details.
 
    posts/test
    kmd/01_start_to_amdgpu
+   kmd/02_linux_kernel_basic
+   kmd/03_compile_linux
    umd/01_start_to_rocm
 
    
