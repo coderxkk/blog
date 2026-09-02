@@ -1,0 +1,540 @@
+:root {
+  --koi-ink: #17211f;
+  --koi-paper: #f5f1e8;
+  --koi-paper-deep: #ebe4d6;
+  --koi-rust: #c95232;
+  --koi-teal: #16736d;
+  --koi-olive: #668247;
+  --koi-line: rgba(23, 33, 31, 0.16);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body:has(.home-shell) {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(201, 82, 50, 0.11), transparent 28rem),
+    radial-gradient(circle at 88% 38%, rgba(22, 115, 109, 0.1), transparent 32rem),
+    var(--koi-paper);
+}
+
+body:has(.home-shell) .bd-container,
+body:has(.home-shell) .bd-container__inner,
+body:has(.home-shell) .bd-main,
+body:has(.home-shell) .bd-content,
+body:has(.home-shell) .bd-article-container {
+  max-width: none;
+}
+
+body:has(.home-shell) .bd-container__inner {
+  display: block;
+}
+
+body:has(.home-shell) .bd-main {
+  width: 100%;
+}
+
+body:has(.home-shell) .bd-article {
+  padding: 0;
+}
+
+body:has(.home-shell) .bd-header-article,
+body:has(.home-shell) .prev-next-footer {
+  display: none;
+}
+
+.home-shell {
+  color: var(--koi-ink);
+  font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  margin: 0 auto;
+  max-width: 1320px;
+  overflow: hidden;
+  padding: 3.5rem 2.5rem 5rem;
+}
+
+.home-hero {
+  align-items: stretch;
+  display: grid;
+  gap: clamp(2rem, 5vw, 5.5rem);
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  min-height: 34rem;
+  padding: clamp(2rem, 5vw, 5rem) 0 clamp(4rem, 8vw, 7.5rem);
+  position: relative;
+}
+
+.home-hero::before {
+  background-image:
+    linear-gradient(var(--koi-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--koi-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  content: "";
+  inset: -4rem 45% 8rem -100vw;
+  mask-image: linear-gradient(90deg, transparent, #000 70%);
+  opacity: 0.32;
+  pointer-events: none;
+  position: absolute;
+}
+
+.hero-copy {
+  align-self: center;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-kicker,
+.section-eyebrow {
+  color: var(--koi-rust);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  margin: 0 0 1.5rem;
+}
+
+.hero-kicker span {
+  background: var(--koi-rust);
+  display: inline-block;
+  height: 2px;
+  margin: 0 0.7rem 0.2rem 0;
+  width: 2.8rem;
+}
+
+.hero-copy h1 {
+  color: var(--koi-ink);
+  font-family: Georgia, "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: clamp(3.25rem, 7vw, 6.6rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.04;
+  margin: 0;
+}
+
+.hero-copy h1 em {
+  color: var(--koi-rust);
+  font-style: normal;
+  position: relative;
+}
+
+.hero-copy h1 em::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 12'%3E%3Cpath d='M2 8C82 2 196 3 318 6' fill='none' stroke='%23c95232' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  bottom: -0.5rem;
+  content: "";
+  height: 0.7rem;
+  left: 0;
+  opacity: 0.75;
+  position: absolute;
+  width: 100%;
+}
+
+.hero-lead {
+  color: rgba(23, 33, 31, 0.72);
+  font-size: clamp(1rem, 1.4vw, 1.18rem);
+  line-height: 1.9;
+  margin: 2.2rem 0 0;
+  max-width: 40rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 2.4rem;
+}
+
+.home-button {
+  align-items: center;
+  border: 1px solid var(--koi-ink);
+  display: inline-flex;
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 0.45rem;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0.75rem 1.35rem;
+  text-decoration: none !important;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.home-button--primary {
+  background: var(--koi-ink);
+  color: var(--koi-paper) !important;
+}
+
+.home-button--ghost {
+  color: var(--koi-ink) !important;
+}
+
+.home-button:hover {
+  background: var(--koi-rust);
+  border-color: var(--koi-rust);
+  color: #fff !important;
+  transform: translateY(-2px);
+}
+
+.profile-card {
+  align-self: center;
+  background: rgba(255, 253, 247, 0.76);
+  border: 1px solid var(--koi-line);
+  box-shadow: 1.1rem 1.1rem 0 rgba(23, 33, 31, 0.07);
+  padding: 1.25rem;
+  position: relative;
+}
+
+.profile-card::after {
+  border: 1px solid var(--koi-rust);
+  content: "";
+  height: 4rem;
+  position: absolute;
+  right: -0.7rem;
+  top: -0.7rem;
+  width: 4rem;
+  z-index: -1;
+}
+
+.profile-topline {
+  border-bottom: 1px solid var(--koi-line);
+  color: rgba(23, 33, 31, 0.55);
+  display: flex;
+  font-size: 0.65rem;
+  font-weight: 800;
+  justify-content: space-between;
+  letter-spacing: 0.16em;
+  padding-bottom: 0.8rem;
+}
+
+.profile-avatar {
+  aspect-ratio: 1;
+  border-radius: 0;
+  display: block;
+  filter: saturate(0.82) contrast(1.03);
+  height: auto;
+  margin: 1.4rem 0;
+  object-fit: cover;
+  width: 100%;
+}
+
+.profile-name {
+  font-family: Georgia, "Noto Serif CJK SC", serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.profile-role {
+  color: var(--koi-rust);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0.35rem 0 1rem;
+}
+
+.profile-bio {
+  color: rgba(23, 33, 31, 0.68);
+  font-size: 0.9rem;
+  line-height: 1.75;
+  margin: 0;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1.3rem;
+}
+
+.profile-tags span {
+  background: var(--koi-paper-deep);
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 0.4rem 0.55rem;
+}
+
+.columns-section {
+  border-top: 1px solid var(--koi-line);
+  padding: clamp(4rem, 7vw, 7rem) 0;
+}
+
+.section-heading {
+  align-items: end;
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1.2fr 0.8fr;
+  margin-bottom: 3rem;
+}
+
+.section-eyebrow {
+  margin-bottom: 0.8rem;
+}
+
+.section-heading h2 {
+  color: var(--koi-ink);
+  font-family: Georgia, "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.section-heading > p {
+  color: rgba(23, 33, 31, 0.65);
+  line-height: 1.8;
+  margin: 0;
+}
+
+.column-grid {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--koi-line);
+  border: 1px solid var(--koi-line);
+}
+
+.column-card {
+  --column-accent: var(--koi-rust);
+  background: rgba(255, 253, 247, 0.88);
+  color: var(--koi-ink) !important;
+  display: grid;
+  gap: 1.6rem;
+  grid-template-columns: auto 1fr;
+  min-height: 24rem;
+  overflow: hidden;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  position: relative;
+  text-decoration: none !important;
+  transition: background 220ms ease, transform 220ms ease;
+}
+
+.column-card::before {
+  background: var(--column-accent);
+  content: "";
+  height: 4px;
+  left: 0;
+  position: absolute;
+  right: 100%;
+  top: 0;
+  transition: right 260ms ease;
+}
+
+.column-card:hover {
+  background: #fffdf7;
+  transform: translateY(-4px);
+  z-index: 1;
+}
+
+.column-card:hover::before {
+  right: 0;
+}
+
+.column-card--umd {
+  --column-accent: var(--koi-teal);
+}
+
+.column-card--amd {
+  --column-accent: #a83b2b;
+}
+
+.column-card--cuda {
+  --column-accent: var(--koi-olive);
+}
+
+.column-index {
+  color: var(--column-accent);
+  font-family: Georgia, serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.column-mark {
+  color: rgba(23, 33, 31, 0.055);
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(4.5rem, 10vw, 8.5rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+  position: absolute;
+  right: 1.2rem;
+  top: 1.2rem;
+}
+
+.column-content {
+  align-self: end;
+  grid-column: 1 / -1;
+  position: relative;
+  z-index: 1;
+}
+
+.column-label {
+  color: var(--column-accent);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  margin: 0 0 0.65rem;
+}
+
+.column-content h3 {
+  color: var(--koi-ink);
+  font-family: Georgia, "Noto Serif CJK SC", serif;
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+  margin: 0;
+}
+
+.column-content > p:last-child {
+  color: rgba(23, 33, 31, 0.66);
+  line-height: 1.75;
+  margin: 1rem 0 0;
+  max-width: 30rem;
+}
+
+.column-link {
+  align-items: center;
+  color: var(--column-accent);
+  display: flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  grid-column: 1 / -1;
+  letter-spacing: 0.06em;
+}
+
+.column-link span {
+  font-size: 1.2rem;
+  transition: transform 180ms ease;
+}
+
+.column-card:hover .column-link span {
+  transform: translateX(0.35rem);
+}
+
+.home-manifesto {
+  align-items: center;
+  background: var(--koi-ink);
+  color: var(--koi-paper);
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 0.35fr 1.65fr;
+  padding: clamp(2rem, 5vw, 4.5rem);
+}
+
+.home-manifesto > p {
+  color: #e69072;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.17em;
+  margin: 0;
+}
+
+.home-manifesto blockquote {
+  border: 0;
+  color: var(--koi-paper);
+  font-family: Georgia, "Noto Serif CJK SC", serif;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+@keyframes home-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-copy,
+.profile-card,
+.section-heading,
+.column-card {
+  animation: home-rise 620ms both;
+}
+
+.profile-card {
+  animation-delay: 100ms;
+}
+
+.section-heading {
+  animation-delay: 160ms;
+}
+
+.column-card:nth-child(1) { animation-delay: 210ms; }
+.column-card:nth-child(2) { animation-delay: 270ms; }
+.column-card:nth-child(3) { animation-delay: 330ms; }
+.column-card:nth-child(4) { animation-delay: 390ms; }
+
+@media (max-width: 900px) {
+  .home-shell {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .home-hero,
+  .section-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .home-hero {
+    gap: 3.5rem;
+    padding-top: 3rem;
+  }
+
+  .profile-card {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(140px, 0.5fr) 1fr;
+  }
+
+  .profile-topline,
+  .profile-tags {
+    grid-column: 1 / -1;
+  }
+
+  .profile-avatar {
+    margin: 0;
+  }
+
+  .profile-copy {
+    align-self: center;
+  }
+}
+
+@media (max-width: 680px) {
+  .hero-copy h1 {
+    font-size: clamp(2.8rem, 14vw, 4.2rem);
+  }
+
+  .column-grid,
+  .home-manifesto {
+    grid-template-columns: 1fr;
+  }
+
+  .column-card {
+    min-height: 21rem;
+  }
+
+  .profile-card {
+    display: block;
+  }
+
+  .profile-avatar {
+    margin: 1.2rem 0;
+  }
+
+  .home-manifesto {
+    gap: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .hero-copy,
+  .profile-card,
+  .section-heading,
+  .column-card {
+    animation: none;
+  }
+}
