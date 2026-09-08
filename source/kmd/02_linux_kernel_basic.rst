@@ -12,6 +12,8 @@ Linux内核基础知识
 系统调用陷入
 ------------------
 
+概览
+
 .. code-block:: 
     
     ┌──────────────────────────── 用户态 ring3 ────────────────────────────┐
@@ -40,6 +42,30 @@ Linux内核基础知识
     │    └─► 按 cmd 查 kfd_ioctl_handlers[] 分发表                          │
     │          └─► kfd_ioctl_alloc_memory(file, cmd, args)  ← 第14周精读    │
     └──────────────────────────────────────────────────────────────────────┘
+
+
+vfs层
+
+.. code-block:: c
+
+    SYSCALL_DEFINE3(ioctl, unsigned int, fd, unsigned int, cmd, unsigned long, arg)
+    {
+        CLASS(fd, f)(fd);
+        int error;
+
+        if (fd_empty(f))
+            return -EBADF;
+
+        error = security_file_ioctl(fd_file(f), cmd, arg);
+        if (error)
+            return error;
+
+        error = do_vfs_ioctl(fd_file(f), fd, cmd, arg);
+        if (error == -ENOIOCTLCMD)
+            error = vfs_ioctl(fd_file(f), cmd, arg);
+
+        return error;
+    }
 
 
 fd 与 struct file 的映射
@@ -87,33 +113,12 @@ struct file 打开文件的内核对象
         // ... 很多其他字段
     };
 
-open("/dev/kfd") 的完整链路
+open("/dev/kfd") 的完整链路(file有关的概念结构)
 
 
 .. code-block:: text
 
     current -+ files
-        |
-        v
-    struct files_struct
-        |
-        v
-    struct fdtable
-        |
-        v
-    fd[] 数组  ──索引──+  struct file *
-                            |
-                            +-- f_path.dentry   --+ /dev/kfd 的 dentry
-                            +-- f_inode         --+ 设备 inode
-                            +-- f_op            --+ kfd_fops
-                            +-- private_data    --+ kfd_process（驱动私有的进程上下文）
-                            +-- f_count         --+ 当前引用计数
-
-file有关的概念结构
-
-.. code-block:: text
-
-    current-+files
         |
         v
     struct files_struct
