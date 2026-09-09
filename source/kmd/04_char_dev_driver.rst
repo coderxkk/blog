@@ -1,5 +1,5 @@
 .. meta::
-   :description: 字符设备驱动开发基础知识及ioctl功能
+   :description: 字符设备驱动开发基础知识
    :keywords: linux, module, 编译
 
 ########################
