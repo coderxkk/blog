@@ -100,6 +100,44 @@ copy_from_user / copy_to_user
         return ret;
     }
 
+
+宏 THIS_MODULE
+--------------------------
+
+它是内核提供的一个宏，指向当前模块的 struct module 结构体指针。
+
+.. code-block:: c
+
+    #include <linux/module.h>
+
+.. code-block:: c
+
+    struct module {
+        const char *name;
+        struct list_head list;
+        int refcnt; // 引用计数
+        ...
+    };
+
+在字符设备驱动中，它主要用在：
+
+.. code-block:: c
+
+    static const struct file_operations my_dev_fops = {
+        .owner   = THIS_MODULE,
+        .open    = my_dev_open,
+        .release = my_dev_release,
+        .read    = my_dev_read,
+        .write   = my_dev_write,
+        .unlocked_ioctl = my_unlocked_ioctl,
+        .compat_ioctl = my_compat_ioctl,
+    };
+
+
+作用：.owner = THIS_MODULE 告诉内核"这个文件操作属于当前模块"。当设备被打开时，内核会增加该模块的引用计数，防止模块在使用中被卸载（rmmod）。如果不用它，模块可能在设备正被使用时被卸载，导致内核崩溃。
+
+如果是编译进内核（非模块）的驱动，THIS_MODULE 就是 NULL。
+
 ioctl简单demo
 ==================================
 
