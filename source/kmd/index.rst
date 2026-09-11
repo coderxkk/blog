@@ -13,3 +13,4 @@ KMD（Kernel Mode Driver）专栏聚焦 Linux 内核与 GPU 内核态驱动。�
    03_compile_linux
    04_char_dev_driver
    05_ioctl_basic
+   06_kfd_chardev

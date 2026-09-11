@@ -6,6 +6,124 @@
 字符设备驱动
 ########################
 
+基础概念
+==================================
+
+整体框架
+--------------------------
+
+一个字符设备驱动要能被用户空间访问，需要完成三件事：
+
+    1. 向内核申请设备号（主设备号+次设备号）
+
+    2. 向内核注册字符设备（cdev）
+
+    3. 创建设备节点（/dev/xxx），让用户能open
+
+设备号
++++++++++++++++++++++++
+
+设备号 = 主设备号 + 次设备号。
+
+主设备号：标识哪一类驱动。所有 GPU 走 DRM 的话，主设备号相同（比如 226）。
+
+次设备号：标识这一类里的第几个实例。
+
+下面是创建4个设备的用法：
+
+.. code-block:: c
+     
+    ... 
+    int err = alloc_chrdev_region(&my_dev_base, 0, 4, MY_DEV_NAME);
+
+    for (i = 0; i < 4; i++) {
+        dev_t devno = MKDEV(MAJOR(my_dev_base), MINOR(my_dev_base) + i);
+        cdev_init(&dev, &my_dev_fops);
+        cdev.owner = THIS_MODULE;
+        err = cdev_add(&cdev, devno, 1);
+    }
+    ...
+
+
+device_create
++++++++++++++++++++++++++
+
+cdev_add 让内核能"路由"到驱动；device_create 让用户能"发现"设备。
+
+cdev_add 和 device_create 之间的区别和联系：
+
+.. code-block:: text
+
+        ┌─────────────────── 内核空间 ───────────────────┐
+        │                                                 │
+        │  cdev_map:  (226,0) ──► cdev ──► fops           │ ← cdev_add 建立
+        │                                     │           │
+        │                                     ▼           │
+        │                              真正的驱动代码      │
+        │                                                 │
+        │  sysfs: /sys/class/my_class/my_dev0             │ ← device_create 建立
+        │              （携带 dev_t = 226,0）              │
+        └────────────────────┬────────────────────────────┘
+                            │ uevent
+                            ▼
+                    udev 自动 mknod
+                            │
+                            ▼
+        ┌─────────────────── 用户空间 ───────────────────┐
+        │  /dev/my_dev0  (226,0)                          │
+        │      │                                          │
+        │   open() → 内核查 cdev_map → 找到 fops          │
+        └─────────────────────────────────────────────────┘
+
+
+class 和 device 的联系
+
+.. code-block:: text
+
+    class（分类，抽象）
+        └── device（实例，具体）
+                └── 携带 dev_t（设备号）
+
+
+
+宏 THIS_MODULE
+--------------------------
+
+它是内核提供的一个宏，指向当前模块的 struct module 结构体指针。
+
+.. code-block:: c
+
+    #include <linux/module.h>
+
+.. code-block:: c
+
+    struct module {
+        const char *name;
+        struct list_head list;
+        int refcnt; // 引用计数
+        ...
+    };
+
+在字符设备驱动中，它主要用在：
+
+.. code-block:: c
+
+    static const struct file_operations my_dev_fops = {
+        .owner   = THIS_MODULE,
+        .open    = my_dev_open,
+        .release = my_dev_release,
+        .read    = my_dev_read,
+        .write   = my_dev_write,
+        .unlocked_ioctl = my_unlocked_ioctl,
+        .compat_ioctl = my_compat_ioctl,
+    };
+
+
+作用：.owner = THIS_MODULE 告诉内核"这个文件操作属于当前模块"。当设备被打开时，内核会增加该模块的引用计数，防止模块在使用中被卸载（rmmod）。如果不用它，模块可能在设备正被使用时被卸载，导致内核崩溃。
+
+如果是编译进内核（非模块）的驱动，THIS_MODULE 就是 NULL。
+
+
 极简字符设备驱动：/dev/my_dev
 ==================================
 
