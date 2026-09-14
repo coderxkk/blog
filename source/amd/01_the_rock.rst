@@ -20,6 +20,104 @@ TheRock 使用方法
     git clone https://github.com/ROCm/TheRock.git
     cd TheRock
 
+
+
+构建开发容器
+--------------------------
+
+在拉取程序子模块和代码编译前，建议先构建一个开发容器，可以在相对独立的环境进行开发。避免影响宿主机环境。
+建一个专门的 TheRock 开发镜像，在 ~/rocm-dev/ 下创建文件 `Dockerfile.therock-dev` ：
+
+.. code-block:: dockerfile
+
+    # Dockerfile.therock-dev
+    FROM ubuntu:24.04
+
+    ENV DEBIAN_FRONTEND=noninteractive
+
+    RUN apt-get update && apt-get install -y \
+        ca-certificates \
+        curl \
+        git \
+        gcc \
+        g++ \
+        gfortran \
+        cmake \
+        ninja-build \
+        make \
+        pkg-config \
+        xxd \
+        automake \
+        autoconf \
+        libtool \
+        python3 \
+        python3-pip \
+        python3-venv \
+        python3-dev \
+        libegl1-mesa-dev \
+        texinfo \
+        bison \
+        flex \
+        gdb \
+        strace \
+        ltrace \
+        file \
+        pciutils \
+        vim \
+        less \
+        && rm -rf /var/lib/apt/lists/*
+
+    WORKDIR /workspace
+
+    CMD ["/bin/bash"]
+
+构建：
+
+.. code-block:: shell
+
+    cd ~/rocm-dev
+
+    docker build \
+        -f Dockerfile.therock-dev \
+        -t therock-dev:ubuntu24.04 \
+        .
+
+容器启动：
+
+.. code-block:: shell
+
+    docker run -it \
+        --name therock-dev \
+        --device=/dev/kfd \
+        --device=/dev/dri \
+        --cap-add=SYS_PTRACE \
+        --security-opt seccomp=unconfined \
+        -v ~/my/rocm-dev/TheRock:/workspace/TheRock \
+        -w /workspace/TheRock \
+        therock-dev:ubuntu24.04
+
+第一次进入容器，初始化 TheRock:
+
+先安装 TheRock 自己要求的 pinned patchelf：
+
+.. code-block:: shell
+
+  INSTALL_PREFIX=/usr/local ./dockerfiles/install_pinned_patchelf.sh
+
+然后 Python 环境：
+
+.. code-block:: shell
+
+  python3 -m venv .venv
+  source .venv/bin/activate
+
+  pip install --upgrade pip
+  pip install -r requirements.txt
+
+
+拉取子模块代码
+--------------------------
+
 不要手动 git submodule update --init --recursive。TheRock 当前推荐：
 
 .. code-block:: shell
@@ -60,7 +158,7 @@ stage构建说明
 .. code-block:: shell
 
     # 只构建 rocm-libraries
-    python3 ./build_tools/build.py --stage compiler-runtime
+    python3 ./build_tools/fetch_sources.py --stage compiler-runtime
 
 The Rock 的 12 个 stages 分为四种角色，如下图所示：
 
@@ -206,80 +304,47 @@ The Rock（The HIP Environment and ROCm Kit）是 ROCm 自 7.14 起官方采用�
     # ==============================================================================
 
 
-构建开发容器
---------------------------
-
-在程序编译前，建议先构建一个开发容器，可以在相对独立的环境进行开发。避免影响宿主机环境。
-建一个专门的 TheRock 开发镜像，在 ~/rocm-dev/ 下创建：
-
-.. code-block:: dockerfile
-
-    # Dockerfile.therock-dev
-    FROM ubuntu:24.04
-
-    ENV DEBIAN_FRONTEND=noninteractive
-
-    RUN apt-get update && apt-get install -y \
-        ca-certificates \
-        curl \
-        git \
-        gcc \
-        g++ \
-        gfortran \
-        cmake \
-        ninja-build \
-        make \
-        pkg-config \
-        xxd \
-        automake \
-        autoconf \
-        libtool \
-        python3 \
-        python3-pip \
-        python3-venv \
-        python3-dev \
-        libegl1-mesa-dev \
-        texinfo \
-        bison \
-        flex \
-        gdb \
-        strace \
-        ltrace \
-        file \
-        pciutils \
-        vim \
-        less \
-        && rm -rf /var/lib/apt/lists/*
-
-    WORKDIR /workspace
-
-    CMD ["/bin/bash"]
-
-构建：
-
-.. code-block:: shell
-
-    cd ~/rocm-dev
-
-    docker build \
-        -f Dockerfile.therock-dev \
-        -t therock-dev:ubuntu24.04 \
-        .
-
-容器启动：
-
-.. code-block:: shell
-
-    docker run -it \
-        --name therock-dev \
-        --device=/dev/kfd \
-        --device=/dev/dri \
-        --cap-add=SYS_PTRACE \
-        --security-opt seccomp=unconfined \
-        -v ~/my/rocm-dev/TheRock:/workspace/TheRock \
-        -w /workspace/TheRock \
-        therock-dev:ubuntu24.04
-
 编译
 --------------------------
 
+cmake配置
+++++++++++++++++++++
+
+.. code-block:: bash
+
+  cmake -S . -B build-debug -GNinja \
+      -DTHEROCK_ENABLE_ALL=OFF \
+      -DTHEROCK_ENABLE_CORE_RUNTIME=ON \
+      -DTHEROCK_ENABLE_HIP_RUNTIME=ON \
+      -DTHEROCK_AMDGPU_FAMILIES=gfx90a \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DROCR-Runtime_BUILD_TYPE=Debug \
+      -Dhip-clr_BUILD_TYPE=Debug  \
+      -DCMAKE_INSTALL_PREFIX=/workspace/TheRock/install-debug
+
+编译
+++++++++++++++++++++
+
+.. code-block:: bash
+
+  cmake --build build-debug -j$(nproc)
+
+安装
+++++++++++++++++++++
+
+.. code-block:: bash
+
+  cmake --install build-debug
+
+GDB调试环境
+++++++++++++++++++++
+
+构建完后可以先设置环境变量：
+
+.. code-block:: bash
+
+  export ROCM_PATH=/workspace/TheRock/install-debug
+  export PATH=$ROCM_PATH/bin:$PATH
+  export LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/lib/rocm_sysdeps:$LD_LIBRARY_PATH
+
+  
