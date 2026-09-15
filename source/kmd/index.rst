@@ -8,9 +8,10 @@ KMD（Kernel Mode Driver）专栏聚焦 Linux 内核与 GPU 内核态驱动。�
    :maxdepth: 1
    :caption: 专栏文章
 
-   01_start_to_amdgpu
-   02_linux_kernel_basic
+   01_basic_amdgpu_start
+   02_basic_linux_start
    03_compile_linux
-   04_char_dev_driver
-   05_ioctl_basic
+   04_basic_chardev
+   05_basic_ioctl
    06_kfd_chardev
+   07_basic_mmap

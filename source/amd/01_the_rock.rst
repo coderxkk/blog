@@ -6,6 +6,24 @@
 TheRock--rocm构建工具
 ##############################
 
+TheRock 介绍
+==================
+
+**TheRock 是 ROCm 的统一构建与发布项目**，全称是 **The HIP Environment and ROCm Kit**。可以把它理解为 ROCm 的“组装工厂”：把编译器、HIP 运行时、数学库等组件整合起来，统一编译、测试和打包。 `官方仓库 <https://github.com/ROCm/TheRock>`_。
+
+它主要解决三个问题：
+
+- **简化编译**：通过 CMake 统一管理多个组件及其依赖，减少逐个配置和编译的工作。
+- **方便定制**：可以选择需要的组件和目标 GPU 架构，例如只构建某款显卡需要的 HIP 和数学库。
+- **方便获取和验证新版本**：提供 ROCm、PyTorch 的每日构建，并支持在多种 Linux 发行版和原生 Windows 上构建，也支持从源码构建使用 ROCm 的 PyTorch、JAX。 `功能与构建说明 <https://github.com/ROCm/TheRock#features>`_。
+
+**它与 ROCm 的关系**：ROCm 是 GPU 计算软件平台，TheRock 负责把这些软件组件组织成可构建、可测试、可发布的产品。按当前官方说明，从 **ROCm 7.14** 起，ROCm 已通过 TheRock 构建和发布。 `项目说明 <https://github.com/ROCm/TheRock#therock>`_。
+
+**ROCm 7.14** 是 **ROCm 10.0** 前的最后一个版本。所以，TheRock项目也算是 **ROCm 10.0** 的一个重要工程成果。 **ROCm 10.0** 是ROCm十周年纪念版。 **ROCm 10.0** 版本提供了很多的特性。
+
+
+简单说： **对开发者，它让修改和编译 ROCm 更方便；对使用者，它提供了获取 ROCm 及相关框架安装包的渠道。**
+
 TheRock 使用方法
 ==================
 
@@ -304,7 +322,7 @@ The Rock（The HIP Environment and ROCm Kit）是 ROCm 自 7.14 起官方采用�
     # ==============================================================================
 
 
-编译
+编译debug版
 --------------------------
 
 cmake配置
@@ -336,8 +354,20 @@ cmake配置
 
   cmake --install build-debug
 
-GDB调试环境
-++++++++++++++++++++
+
+清除空间
++++++++++++++++++++++
+
+在构建过程中会产生大量的中间文件。占用的空间非常大，所以可以通过及时清理构建的中间产物，来避免空间浪费。
+
+.. image:: image/filesort.png
+
+.. code-block:: bash
+
+  rm -rf build-debug
+
+GDB调试
+------------------------
 
 构建完后可以先设置环境变量：
 
@@ -347,4 +377,134 @@ GDB调试环境
   export PATH=$ROCM_PATH/bin:$PATH
   export LD_LIBRARY_PATH=$ROCM_PATH/lib:$ROCM_PATH/lib/rocm_sysdeps:$LD_LIBRARY_PATH
 
-  
+写一个简单的HIP程序。建立：
+
+.. code-block:: bash
+
+  mkdir -p /workspace/hip-debug-test
+  cd /workspace/hip-debug-test
+  vim test.cpp
+
+test.cpp:
+
+.. code-block:: cpp
+
+  #include <hip/hip_runtime.h>
+  #include <cstdio>
+
+  __global__ void add_one(int* data)
+  {
+      int id = blockIdx.x * blockDim.x + threadIdx.x;
+
+      if (id < 64) {
+          data[id] += 1;
+      }
+  }
+
+  int main()
+  {
+      int* d_data = nullptr;
+
+      printf("before hipMalloc\n");
+
+      hipError_t ret = hipMalloc(&d_data, 64 * sizeof(int));
+      if (ret != hipSuccess) {
+          printf("hipMalloc failed: %s\n", hipGetErrorString(ret));
+          return 1;
+      }
+
+      printf("before kernel launch\n");
+
+      hipLaunchKernelGGL(
+          add_one,
+          dim3(1),
+          dim3(64),
+          0,
+          0,
+          d_data
+      );
+
+      printf("after kernel launch\n");
+
+      ret = hipDeviceSynchronize();
+
+      printf("after sync: %s\n", hipGetErrorString(ret));
+
+      hipFree(d_data);
+
+      return 0;
+  }
+
+编译：
+
+.. code-block:: bash
+
+  $ROCM_PATH/bin/hipcc \
+      -g \
+      -O0 \
+      --offload-arch=gfx90a \
+      test.cpp \
+      -o test
+
+启动：
+
+.. code-block:: bash
+
+  gdb ./test
+
+打断点：
+
+.. code-block:: text
+
+  b hsakmt_ioctl
+  r
+
+输出结果：
+
+.. code-block:: text
+
+  (gdb) bt
+  #0  hsakmt_ioctl (fd=3, request=2148027137, arg=0x7fffffffc954) at /workspace/TheRock/rocm-systems/projects/rocr-runtime/libhsakmt/src/libhsakmt.c:48
+  #1  0x00007ffff4bb2fff in hsakmt_init_kfd_version () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/libhsakmt/src/version.c:44
+  #2  0x00007ffff4ba8c08 in hsaKmtOpenKFDCtx (pCtx=0x7fffffffc9d8) at /workspace/TheRock/rocm-systems/projects/rocr-runtime/libhsakmt/src/openclose.c:228
+  #3  0x00007ffff4ba9139 in hsaKmtOpenKFD () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/libhsakmt/src/openclose.c:325
+  #4  0x00007ffff4933c0d in rocr::AMD::KfdDriver::Open (this=0x5555555f2b20) at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/driver/kfd/amd_kfd_driver.cpp:209
+  #5  0x00007ffff4933b1c in rocr::AMD::KfdDriver::DiscoverDriver (driver=std::unique_ptr<rocr::core::Driver> = {...})
+      at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/driver/kfd/amd_kfd_driver.cpp:196
+  #6  0x00007ffff49e0bfd in std::__invoke_impl<hsa_status_t, hsa_status_t (*&)(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&), std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&> (__f=@0x7ffff4dec610: 0x7ffff4933a80 <rocr::AMD::KfdDriver::DiscoverDriver(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&)>,
+      __args=std::unique_ptr<rocr::core::Driver> = {...}) at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/invoke.h:61
+  #7  0x00007ffff49e0b9d in std::__invoke_r<hsa_status_t, hsa_status_t (*&)(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&), std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&> (__fn=@0x7ffff4dec610: 0x7ffff4933a80 <rocr::AMD::KfdDriver::DiscoverDriver(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&)>,
+      __args=std::unique_ptr<rocr::core::Driver> = {...}) at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/invoke.h:114
+  #8  0x00007ffff49e0ae5 in std::_Function_handler<hsa_status_t(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&), hsa_status_t (*)(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&)>::_M_invoke (__functor=..., __args=std::unique_ptr<rocr::core::Driver> = {...}) at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/std_function.h:290
+  #9  0x00007ffff49db5a6 in std::function<hsa_status_t(std::unique_ptr<rocr::core::Driver, std::default_delete<rocr::core::Driver> >&)>::operator() (
+      this=0x7ffff4dec610 <rocr::AMD::(anonymous namespace)::discover_driver_funcs>, __args=std::unique_ptr<rocr::core::Driver> = {...})
+      at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/std_function.h:591
+  #10 0x00007ffff49d9113 in rocr::AMD::(anonymous namespace)::DiscoverDrivers () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/amd_topology.cpp:105
+  #11 0x00007ffff49d8fdd in rocr::AMD::Load () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/amd_topology.cpp:546
+  #12 0x00007ffff4a46ecf in rocr::core::Runtime::Load (this=0x5555555f4390) at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/runtime.cpp:2678
+  #13 0x00007ffff4a46ce6 in rocr::core::Runtime::Acquire () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/runtime.cpp:143
+  #14 0x00007ffff49e71bd in rocr::HSA::hsa_init () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/runtime/hsa.cpp:207
+  #15 0x00007ffff4aca8b3 in hsa_init () at /workspace/TheRock/rocm-systems/projects/rocr-runtime/runtime/hsa-runtime/core/common/hsa_table_interface.cpp:70
+  #16 0x00007ffff68d6549 in amd::roc::Hsa::init () at /workspace/TheRock/rocm-systems/projects/clr/rocclr/device/rocm/rocrctx.hpp:176
+  #17 0x00007ffff68bd90f in amd::roc::Device::init () at /workspace/TheRock/rocm-systems/projects/clr/rocclr/device/rocm/rocdevice.cpp:397
+  #18 0x00007ffff680b214 in amd::Device::init () at /workspace/TheRock/rocm-systems/projects/clr/rocclr/device/device.cpp:870
+  #19 0x00007ffff68b0c26 in amd::Runtime::init () at /workspace/TheRock/rocm-systems/projects/clr/rocclr/platform/runtime.cpp:63
+  #20 0x00007ffff61efadc in hip::init (status=0x7fffffffe1b7) at /workspace/TheRock/rocm-systems/projects/clr/hipamd/src/hip_context.cpp:36
+  #21 0x00007ffff620e74d in std::__invoke_impl<void, void (&)(bool*), bool*> (__f=@0x7ffff61efab0: {void (bool *)} 0x7ffff61efab0 <hip::init(bool*)>, __args=@0x7fffffffe1a8: 0x7fffffffe1b7)
+      at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/invoke.h:61
+  #22 0x00007ffff620e71d in std::__invoke<void (&)(bool*), bool*> (__fn=@0x7ffff61efab0: {void (bool *)} 0x7ffff61efab0 <hip::init(bool*)>, __args=@0x7fffffffe1a8: 0x7fffffffe1b7)
+      at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/bits/invoke.h:96
+  #23 0x00007ffff620e6ec in std::call_once<void (&)(bool*), bool*>(std::once_flag&, void (&)(bool*), bool*&&)::{lambda()#1}::operator()() const (this=0x7fffffffd698)
+      at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/mutex:900
+  #24 0x00007ffff620e6c4 in std::once_flag::_Prepare_execution::_Prepare_execution<std::call_once<void (&)(bool*), bool*>(std::once_flag&, void (&)(bool*), bool*&&)::{lambda()#1}>(void (&)(bool*))::{lambda()#1}::operator()() const (this=0x7fffffffd5cf) at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/mutex:836
+  #25 0x00007ffff620e691 in std::once_flag::_Prepare_execution::_Prepare_execution<std::call_once<void (&)(bool*), bool*>(std::once_flag&, void (&)(bool*), bool*&&)::{lambda()#1}>(void (&)(bool*))::{lambda()#1}::__invoke() () at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/mutex:836
+  #26 0x00007ffff5be2fb3 in __pthread_once_slow (once_control=0x7ffff7e43e70 <hip::g_ihipInitialized>, init_routine=0x7ffff5e6d420 <__once_proxy>) at ./nptl/pthread_once.c:116
+  #27 0x00007ffff6208cb7 in __gthread_once (__once=0x7ffff7e43e70 <hip::g_ihipInitialized>, __func=0x7ffff5e6d420 <__once_proxy>)
+      at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:700
+  #28 0x00007ffff6209a91 in std::call_once<void (&)(bool*), bool*> (__once=..., __f=@0x7ffff61efab0: {void (bool *)} 0x7ffff61efab0 <hip::init(bool*)>, __args=@0x7fffffffe1a8: 0x7fffffffe1b7)
+      at /usr/lib/gcc/x86_64-linux-gnu/13/../../../../include/c++/13/mutex:907
+  #29 0x00007ffff6410d81 in hip::hipMalloc (ptr=0x7fffffffe420, sizeBytes=256) at /workspace/TheRock/rocm-systems/projects/clr/hipamd/src/hip_memory.cpp:861
+  #30 0x00007ffff66c0e79 in hipMalloc (ptr=0x7fffffffe420, size=256) at /workspace/TheRock/rocm-systems/projects/clr/hipamd/src/hip_table_interface.cpp:1398
+  #31 0x000055555555ec5d in _ZL9hipMallocIiE10hipError_tPPT_m (devPtr=0x7fffffffe420, size=256) at /workspace/TheRock/install-debug/lib/llvm/bin/../../../include/hip/hip_runtime_api.h:11012
+  #32 0x000055555555eb43 in main () at test.cpp:19
+
