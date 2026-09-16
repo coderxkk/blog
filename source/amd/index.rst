@@ -20,4 +20,5 @@ AMD 技术解析
    :maxdepth: 1
    :caption: 专栏文章
 
-   01_the_rock
+   01_therock
+   02_rocprofiler.rst
