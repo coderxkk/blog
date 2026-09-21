@@ -1,0 +1,121 @@
+.. meta::
+   :description: linux内核开发的基础知识
+   :keywords: entry, trap, syscall, idt
+
+########################
+entry详解
+########################
+
+`arch/x86/entry/` 是 x86 架构下 **内核与用户态、以及异常/中断之间的底层入口与出口代码** 。它处理的是“CPU 从用户态陷入内核”和“从内核返回用户态”这两个瞬间，以及系统调用、中断、异常、信号等场景下寄存器现场的保存与恢复。
+
+可以按文件类型分成几类来理解：
+
+1. 系统调用入口
+---------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - 文件
+     - 作用
+   * - ``entry_64.S``
+     - x86-64 的底层汇编入口，包含 ``entry_SYSCALL_64``（``syscall`` 指令入口）、中断/异常公共入口、返回用户态的 ``swapgs_restore_regs_and_return_to_usermode``、``native_irq_return_iret``、``iretq`` 等
+   * - ``entry_32.S``
+     - 32 位 x86 的对应汇编入口
+   * - ``syscall_64.c``
+     - x86-64 系统调用的 C 侧包装，如 ``do_syscall_64()``，负责从寄存器取出系统调用号并分派到 ``sys_call_table``
+   * - ``syscall_32.c``
+     - 32 位对应实现
+   * - ``syscalls/syscall_64.tbl``
+     - x86-64 系统调用号到具体处理函数的映射表
+   * - ``syscalls/syscall_32.tbl``
+     - 32 位系统调用表
+
+2. 异常与中断入口
+-----------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - 文件
+     - 作用
+   * - ``entry_64.S``
+     - 包含各种中断/异常的底层入口，如 ``asm_exc_page_fault``、``asm_exc_divide_error`` 等，负责保存现场、切换到内核栈、调用 C 处理函数
+   * - ``idtentry.h``
+     - 用宏生成 IDT 门入口的公共骨架，比如 ``idtentry``、``idtentry_body``，供 ``entry_64.S`` 展开
+   * - ``calling.h``
+     - 定义入口/出口汇编与 C 代码之间的调用约定、栈布局、寄存器保存偏移等宏
+   * - ``common.c``
+     - 中断/异常公共 C 逻辑，如 ``exc_*`` 系列的通用处理、``irqentry_*`` 相关辅助
+
+
+3. 返回用户态与信号处理
+-----------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - 文件
+     - 作用
+   * - ``entry_64.S``
+     - ``swapgs_restore_regs_and_return_to_usermode`` 等返回路径，恢复用户寄存器并执行 ``iretq`` （或 FRED 路径）
+   * - ``common.c``
+     - ``exit_to_user_mode_loop()``、 ``exit_to_user_mode_prepare()`` 等，处理返回用户态前要完成的工作（如信号、任务状态、TIF 标志）
+   * - ``signal.c``
+     - 信号处理的入口辅助，如 ``do_signal()`` 相关底层支持，决定是否在返回用户态前投递信号
+   * - ``vmlinux.lds.S``
+     - 入口代码段的链接脚本片段，确保入口代码放在合适位置
+
+
+4. 其他辅助
+-----------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - 文件
+     - 作用
+   * - ``Makefile``
+     - 编译规则
+   * - ``thunk_64.S``
+     - 用于某些需要从 32 位兼容模式或特殊调用约定转换的“thunk”代码
+   * - ``vsyscall_64.c``
+     - 处理 ``vsyscall`` 页相关逻辑（老式快速系统调用机制）
+   * - ``syscall_64.c`` 中的 ``do_syscall_x64``
+     - 实际按系统调用号查表并调用
+
+为什么这些代码要单独放在 `entry/` 下
+---------------------------------------------
+
+因为这些代码有几个特殊要求：
+
+1. **必须用汇编或极底层的 C 写**：要精确控制栈切换、寄存器保存顺序、`swapgs`、`iretq` 等，编译器生成的代码不一定满足要求。
+2. **与 C 调用约定不同**：入口时还没有内核栈、没有合法的 `pt_regs`，需要手工构造。
+3. **安全敏感**：要防止栈泄漏、保证 `GS` 基址正确、处理 NMI/MCE 等特殊中断，不能有普通 C 代码的假设。
+4. **架构相关**：x86-64、x86-32、FRED、IDT、syscall/sysenter 等机制都是 x86 特有的。
+
+硬件缺页异常举例
+---------------------------------------------
+
+缺页调用栈：
+
+.. code-block:: text
+
+    p[0] = 42
+    → CPU 触发 #PF
+    → exc_page_fault()          [arch/x86/mm/fault.c]
+    ...
+    → 返回用户态
+    → swapgs_restore_regs_and_return_to_usermode   [arch/x86/entry/entry_64.S]
+    → native_irq_return_iret / iretq
+    → CPU 重新执行 p[0] = 42
+
+
+
+其中 `exc_page_fault()` 之前，CPU 先跳到的是 `entry_64.S` 里由 `idtentry` 宏生成的 `asm_exc_page_fault` 入口；它保存现场、切换到内核栈，然后才调用 C 的 `exc_page_fault()`。返回时，也是 `entry_64.S` 里的返回路径恢复用户现场并执行 `iretq`。
+
+所以 `arch/x86/entry/` 就是 **用户态与内核态之间那道门的门框和门轴** ：进门时保存现场、切换到内核环境；出门时恢复现场、回到用户态继续执行。
