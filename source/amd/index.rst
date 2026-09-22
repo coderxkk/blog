@@ -21,4 +21,5 @@ AMD 技术解析
    :caption: 专栏文章
 
    01_therock
-   02_rocprofiler.rst
+   02_rocprofiler
+   03_impl_rocprofiler
