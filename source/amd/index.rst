@@ -22,4 +22,7 @@ AMD 技术解析
 
    01_therock
    02_rocprofiler
-   03_impl_rocprofiler
+   03_debug_rocprofiler
+   04_impl_rocprofiler
+   05_basic_hiprtc
+
