@@ -101,3 +101,6 @@
    umd/index
    amd/index
    cuda/index
+   llm/index
+   agent/index
+
