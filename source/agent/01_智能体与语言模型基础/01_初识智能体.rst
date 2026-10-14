@@ -194,7 +194,7 @@ Agent 由目标和动态决策驱动。
 
 2. 简单来说，Workflow 是让 AI 按部就班地执行指令，而 Agent 则是赋予 AI 自由度去自主达成目标。工作流是一种传统的自动化范式，其核心是 **对一系列任务或步骤进行预先定义的、结构化的编排** 。与工作流不同，基于大型语言模型的智能体是一个 **具备自主性的、以目标为导向的系统** 。
 
-3. 核心机制 agent loop。
+3. 核心机制 agent loop `` Thought-Action-Observation `` 。
 
 .. image:: images/agent14.png
 
